@@ -6,6 +6,7 @@
 *.iss
 *.file
 *.spec
+*.rar
 
 # Carpetas
  
@@ -13,3 +14,4 @@
  /build
  /__pycache__
  /DATA
+ /otros
