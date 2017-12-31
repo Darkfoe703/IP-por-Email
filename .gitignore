@@ -1,6 +1,5 @@
 # Archivos a ignorar en el proyecyo
 
-*.txt
 *.pyc
 *.pyd
 *.SNT
@@ -9,4 +8,6 @@
 
 /otros
 /win/build
+/win/dist
 /win/Inst
+/win/__pycache__
