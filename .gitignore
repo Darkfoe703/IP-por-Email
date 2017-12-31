@@ -10,8 +10,9 @@
 
 # Carpetas
  
- /dist
- /build
- /__pycache__
- /DATA
+ /win/dist*
+ /win/build
+ /win/__pycache__
+ /win/DATA
+ /linux/DATA
  /otros
