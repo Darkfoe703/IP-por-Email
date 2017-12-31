@@ -1,18 +1,2 @@
 # Archivos a ignorar en el proyecyo
 
-*.pyc
-*.pyd
-*.SNT
-*.iss
-*.file
-*.spec
-*.rar
-
-# Carpetas
- 
- /win/dist*
- /win/build
- /win/__pycache__
- /win/DATA
- /linux/DATA
- /otros
