@@ -1,0 +1,15 @@
+# Archivos a ignorar en el proyecyo
+
+*.pyc
+*.pyd
+*.SNT
+*.iss
+*.file
+*.spec
+
+# Carpetas
+ 
+ /dist
+ /build
+ /__pycache__
+ /DATA
