@@ -1,2 +1,11 @@
 # Archivos a ignorar en el proyecyo
 
+*.txt
+*.pyc
+*.pyd
+
+# Carpetas a ignorar
+
+/otros
+/win/build
+/win/Inst
