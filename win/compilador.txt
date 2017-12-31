@@ -1,0 +1,2 @@
+pyinstaller -w --version-file version.txt --add-data recs;recs -i IP_ico.ico IPporEmail.py
+
