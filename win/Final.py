@@ -81,7 +81,7 @@ class Temporizador(Thread):
 				ipN = self.obtenIP()
 				# Ajusta el intervalo
 				hora = datetime.now()
-				it = timedelta(minutes=self.it)
+				it = timedelta(minutes=self.it())
 				hra_objetivo = (hora + it)
 				bar_estado_intv(hra_objetivo)
 				# Compara las IPs
@@ -104,9 +104,11 @@ class Temporizador(Thread):
 
 	def _stop(self):
 		self._estado = False
+		print("Temp. detenido")
 
 	def _start(self):
 		self._estado = True
+		print("Temp. iniciado")
 
 
 
@@ -448,6 +450,13 @@ def error_muerto():
 	aux.close()
 	mjes_error(aux2)
 	v_ppal.destroy()
+
+def registro(info):
+	ahora = datetime.now()
+	aux0 = ("%s" %hoy)
+	aux = open('registro.txt', 'a')
+	aux.write("%s %s\n" %(aux0, info))
+	aux.close()
 
 #=================================================================
 #
