@@ -550,8 +550,9 @@ try:
 		os.makedirs('DATA')
 	else:
 		pass
-except OSError as e:
-	pass
+except OSError as err:
+	mjes_error("No se pudo crear la carpeta.")
+	registro("Imposible CREAR carpeta DATA.")
 
 datos = carga_datos()
 # Estado del check
