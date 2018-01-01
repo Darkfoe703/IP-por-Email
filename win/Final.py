@@ -32,8 +32,10 @@ sys.setrecursionlimit(2880)
 class Temporizador(Thread):
 	"""Temporiza el intervalo en el que se vuelve
 	a hacer las comprobaciones de IP"""
-	def __init__(self, funcion0, funcion1, funcion2, funcion3, funcion4):
-					# (combo_intv, carga_ip, obtener_ip, guarda_ip, email)
+	def __init__(self, funcion0, funcion1, funcion2,
+		funcion3, funcion4, funcion5):
+					# (combo_intv, carga_ip, obtener_ip,
+					#guarda_ip, email, registro)
 		super(Temporizador, self).__init__()
 		self._estado = False
 		self.it = funcion0 # combo_intv()
@@ -41,6 +43,7 @@ class Temporizador(Thread):
 		self.obtenIP = funcion2 # obtener_ip()
 		self.fun_gIP = funcion3 # guarda_ip()
 		self.fun_email = funcion4 # email()
+		self.reg = funcion5 # registro()
 
 	def run(self):
 		# Toma la hora del sistema
@@ -72,7 +75,7 @@ class Temporizador(Thread):
 
 			# La HORA ACTUAL es mayor o igual la HORA OBJETIVO
 			if hra_objetivo <= datetime.now():
-
+				self.reg("Hora de la COMPROBACIÓN.")
 				# Carga la IP guardada, si existe
 				aux = self.cargaIP()
 				# Le quita el salto de línea
@@ -81,7 +84,8 @@ class Temporizador(Thread):
 				ipN = self.obtenIP()
 				# Ajusta el intervalo
 				hora = datetime.now()
-				it = timedelta(minutes=self.it())
+				auxIT = self.it()
+				it = timedelta(minutes = auxIT)
 				hra_objetivo = (hora + it)
 				bar_estado_intv(hra_objetivo)
 				# Compara las IPs
@@ -89,7 +93,9 @@ class Temporizador(Thread):
 					# Si son distintas, guarda y envía la nueva
 					self.fun_gIP(ipN)
 					self.fun_email(ipN)
+					self.reg("Direcciones DIFERENTES. ACTUALIZAR.")
 				else:
+					self.reg("Direcciones IGUALES.")
 					pass
 			time.sleep(1)
 			
@@ -186,8 +192,10 @@ def iniciar():
 		bt_conf.config(state=DISABLED)
 		# Inicia el temporizador
 		temp_comp._start()
+		registro("Servicio INICIADO: ÉXITO.")
 	else:
 		mjes_error("Revise la configuración por favor.")
+		registro("Servicio INICIADO: FALLÓ.")
 		return "error"
 
 def detener():
@@ -195,6 +203,7 @@ def detener():
 	bt_ini.config(state=NORMAL)
 	bt_conf.config(state=NORMAL)
 	bt_det.config(state=DISABLED)
+	registro("Servicio DETENIDO.")
 
 def seguro_inicio():
 	servidor = cpo_sv.get()
@@ -333,11 +342,13 @@ def obtener_ip():
 		cortado3 = cortado2.split(" ")
 		# se guarda la IP en una variable
 		DireccionIP = cortado3[4]
+		registro("Obtener dirección: ÉXITO.")
 
 		return DireccionIP
 	# En caso de error de conexión
 	except urllib.error.URLError:
 		mjes_error("No se ha podido conectar. Revise su conexión a Internet")
+		registro("Obtener dirección: FALLÓ.")
 		return ("Error")
 
 def email(ip):
@@ -373,11 +384,16 @@ Por favor no conteste este mensaje.
 		server.login(username,password)
 		server.sendmail(fromaddr, toaddrs, msg)
 		server.quit()
+		registro("Enviar email: EXITO.")
+
 	except smtplib.SMTPAuthenticationError as err:
+		registro("Enviar email: FALLÓ.")
 		mjes_error("El Usuario y/o Contraseña no son válidos.\nRevise la configuración.")
 	except UnicodeEncodeError as err:
+		registro("Enviar email: FALLÓ.")
 		mjes_error("Ha incluido un caracter no permitido en el mensaje")
 	except:
+		registro("Enviar email: FALLÓ.")
 		mjes_error("No se ha podido establecer conexión con el servidor.\nRevise su conexión a Internet.")
 
 def bar_estado_intv(hora):
@@ -453,7 +469,7 @@ def error_muerto():
 
 def registro(info):
 	ahora = datetime.now()
-	aux0 = ("%s" %hoy)
+	aux0 = ("%s" %ahora)
 	aux = open('registro.txt', 'a')
 	aux.write("%s %s\n" %(aux0, info))
 	aux.close()
@@ -751,7 +767,8 @@ v_conf.withdraw()
 v_acerca.withdraw()
 
 # Inicializa el hilo del temporizador
-temp_comp = Temporizador(combo_intv, carga_ip, obtener_ip, guarda_ip, email)
+temp_comp = Temporizador(combo_intv, carga_ip, obtener_ip,
+	guarda_ip, email, registro)
 temp_comp.setDaemon(True)
 temp_comp.start()
 
