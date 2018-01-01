@@ -33,47 +33,57 @@ class Temporizador(Thread):
 	"""Temporiza el intervalo en el que se vuelve
 	a hacer las comprobaciones de IP"""
 	def __init__(self, funcion0, funcion1, funcion2, funcion3, funcion4):
+					# (combo_intv, carga_ip, obtener_ip, guarda_ip, email)
 		super(Temporizador, self).__init__()
 		self._estado = False
-		self.it = funcion0
-		self.cargaIP = funcion1
-		self.obtenIP = funcion2
-		self.fun_email = funcion3
-		self.fun_gIP = funcion4
+		self.it = funcion0 # combo_intv()
+		self.cargaIP = funcion1 # carga_ip()
+		self.obtenIP = funcion2 # obtener_ip()
+		self.fun_gIP = funcion3 # guarda_ip()
+		self.fun_email = funcion4 # email()
 
 	def run(self):
+		# Toma la hora del sistema
 		hora = datetime.now()
+		# Es igual a 6, 12 o 24
 		auxIT = self.it()
-		it = timedelta(hours=auxIT)
+		# Hace la suma de la hora actual+intervalo
+		it = timedelta(minutes=auxIT)
+		# HORA de la próx. comprobación
 		hra_objetivo = (hora + it)
 
 		while self._estado != False:
 			# La barra deestado recibe la hora objetivo de comprobación
-			estado_int(hra_objetivo)
+			bar_estado_intv(hra_objetivo)
 			# Se fija si existe un archivo con la IP
 			exte = os.path.isfile('DATA/_IP.SNT')
+				# Si no hay:
 			if exte == False:
+				# Se obtine la IP
 				ipN = self.obtenIP()
+				# se la guarda
 				self.fun_gIP(ipN)
+				# se la envía
 				self.fun_email(ipN)
 			#else:
 				# aquí se podría implementar que,
 				# si el archivo contiene una IP
 				# se compruebe de primeras si es la actual...
 
+			# La HORA ACTUAL es mayor o igual la HORA OBJETIVO
 			if hra_objetivo <= datetime.now():
 
 				# Carga la IP guardada, si existe
 				aux = self.cargaIP()
-				# Le quira el salto de línea
+				# Le quita el salto de línea
 				ip0 = aux.rstrip("\n")
 				# Obtine la IP de la web
 				ipN = self.obtenIP()
 				# Ajusta el intervalo
 				hora = datetime.now()
-				it = timedelta(hours=self.it)
+				it = timedelta(minutes=self.it)
 				hra_objetivo = (hora + it)
-				estado_int(hra_objetivo)
+				bar_estado_intv(hra_objetivo)
 				# Compara las IPs
 				if ipN != ip0:
 					# Si son distintas, guarda y envía la nueva
@@ -86,7 +96,7 @@ class Temporizador(Thread):
 		else:
 			try:
 				#print("Detenido")
-				estado_int("DETENIDO")
+				bar_estado_intv("DETENIDO")
 				time.sleep(5)
 				self.run()
 			except RecursionError as err:
@@ -368,7 +378,7 @@ Por favor no conteste este mensaje.
 	except:
 		mjes_error("No se ha podido establecer conexión con el servidor.\nRevise su conexión a Internet.")
 
-def estado_int(hora):
+def bar_estado_intv(hora):
 	if hora != 'DETENIDO':
 		aux = ("%s:%s" %(hora.hour, hora.minute))
 		barraEstado.config(text=("  **Próxima comprobación: "+aux+"**"))
