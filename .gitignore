@@ -3,6 +3,7 @@
 *.pyc
 *.pyd
 *.SNT
+win/registro.txt
 
 # Carpetas a ignorar
 
