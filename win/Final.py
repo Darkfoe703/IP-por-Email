@@ -110,11 +110,9 @@ class Temporizador(Thread):
 
 	def _stop(self):
 		self._estado = False
-		print("Temp. detenido")
 
 	def _start(self):
 		self._estado = True
-		print("Temp. iniciado")
 
 
 
@@ -458,6 +456,7 @@ def mjes_error(tipo):
 	messagebox.showwarning("¡Atención!",tipo)
 
 def error_muerto():
+	registro("Servicio TERMINADO.")
 	aux2 = "La aplicaión se detuvo por estar fuera de uso demasiado tiempo."
 	hoy = datetime.now()
 	aux0 = ("%s" %hoy)
