@@ -30,8 +30,8 @@ v_acerca = Toplevel(v_ppal, bg="black")
 sys.setrecursionlimit(2880)
 
 class Temporizador(Thread):
-	"""Temporiza el intervalo en el que se vuelve
-	a hacer las comprobaciones de IP"""
+	'''Temporiza el intervalo en el que se vuelve
+	a hacer las comprobaciones de IP'''
 	def __init__(self, funcion0, funcion1, funcion2,
 		funcion3, funcion4, funcion5):
 					# (combo_intv, carga_ip, obtener_ip,
@@ -54,7 +54,6 @@ class Temporizador(Thread):
 		it = timedelta(minutes=auxIT)
 		# HORA de la próx. comprobación
 		hra_objetivo = (hora + it)
-
 		while self._estado != False:
 			# La barra deestado recibe la hora objetivo de comprobación
 			bar_estado_intv(hra_objetivo)
@@ -96,7 +95,6 @@ class Temporizador(Thread):
 					self.reg("Direcciones DIFERENTES. ACTUALIZAR.")
 				else:
 					self.reg("Direcciones IGUALES.")
-					pass
 			time.sleep(1)
 			
 		else:
@@ -163,7 +161,6 @@ def carga_ip():
 	# Si no existe escribe un "" en su lugar
 	except OSError as err:
 		IP_gdada = ''
-
 	return IP_gdada
 
 def decodif(archivo):
@@ -210,7 +207,6 @@ def seguro_inicio():
 	contra = cpo_ctña.get()
 	contraR = cpo_Rctña.get()
 	dest = cpo_para.get()
-
 	if servidor == "":
 		return "error"
 	elif puerto == "":
@@ -287,28 +283,31 @@ def restablecer():
 def guard_config_mje(configuracion, mensaje):
 	config = configuracion
 	mje = mensaje
-	# Guarda la configuracíon en un archivo
-	gua_config = open('DATA/_SCNFTG.SNT', 'w')
-	gua_config.writelines([config[0], "\n", config[1], "\n", config[2],
-			"\n", config[3], "\n", config[4], "\n", config[5], "\n", 
-			config[6], "\n", "FIN", "\n"])
-	gua_config.close()
-	# Y el mensaje personalizado en un archivo separado
-	
-	gua_mje = open('DATA/_SMNJTE.SNT', 'w')
-	gua_mje.writelines([mje])
-	gua_mje.close()
-
-
+	try:
+		# Guarda la configuracíon en un archivo
+		gua_config = open('DATA/_SCNFTG.SNT', 'w')
+		gua_config.writelines([config[0], "\n", config[1], "\n", config[2],
+				"\n", config[3], "\n", config[4], "\n", config[5], "\n", 
+				config[6], "\n", "FIN", "\n"])
+		gua_config.close()
+		# Y el mensaje personalizado en un archivo separado
+		gua_mje = open('DATA/_SMNJTE.SNT', 'w')
+		gua_mje.writelines([mje])
+		gua_mje.close()
+	except OSError as err:
+		registro("Guardar Configuración: FALLÓ.")
 	# Llama a la función para codificar los archivos
 	codif('DATA/_SCNFTG.SNT')
 	codif('DATA/_SMNJTE.snt')
 
 def guarda_ip(ip):
-	# Guarda la IP en un archivo
-	data = open('DATA/_IP.SNT', 'w')
-	data.writelines([ip, "\n"])
-	data.close()
+	try:
+		# Guarda la IP en un archivo
+		data = open('DATA/_IP.SNT', 'w')
+		data.writelines([ip, "\n"])
+		data.close()
+	except OSError as err:
+		registro("Guardar dirección IP: FALLÓ.")
 
 def codif(archivo):
 	# Abre el archivo escrito en cristiano
@@ -319,7 +318,6 @@ def codif(archivo):
 		aux1.close()
 		# Convierte lo leido a Base64
 		b64 = base64.b64encode(bytes(aux2, "utf-8"))
-
 		aux1 = open(archivo, 'w')
 		aux1.write(str(b64, 'utf-8'))
 		aux1.close()
@@ -341,7 +339,6 @@ def obtener_ip():
 		# se guarda la IP en una variable
 		DireccionIP = cortado3[4]
 		registro("Obtener dirección: ÉXITO.")
-
 		return DireccionIP
 	# En caso de error de conexión
 	except urllib.error.URLError:
@@ -358,9 +355,7 @@ def email(ip):
 		servidor = cpo_sv.get()
 		puerto = cpo_puerto.get()
 		auxiliar = (servidor+":"+puerto)
-
 		mje = cpo_mje.get("1.0","end-1c")
-
 		fromaddr = cpo_usr.get()
 		toaddrs  = cpo_para.get()
 		msg = """From: IP por E-mail <%s>
@@ -375,7 +370,6 @@ Sol Negro Team - Desarrollo de Software (C) 2018.
 Por favor no conteste este mensaje.
                                                 @Darkfoe703 - SNT
 """ %(fromaddr, toaddrs, IP, mje, IP)
-		 
 		# Enviando el correo
 		server = smtplib.SMTP(auxiliar)
 		server.starttls()
@@ -383,7 +377,6 @@ Por favor no conteste este mensaje.
 		server.sendmail(fromaddr, toaddrs, msg)
 		server.quit()
 		registro("Enviar email: EXITO.")
-
 	except smtplib.SMTPAuthenticationError as err:
 		registro("Enviar email: FALLÓ.")
 		mjes_error("El Usuario y/o Contraseña no son válidos.\nRevise la configuración.")
@@ -431,13 +424,12 @@ def borrar_acceso():
 	if aux == True:
 		winshell.delete_file(accesoD, allow_undo=False,
 			no_confirm=True ,silent=True)
-	pass
 
 def sitio_web():
-	home = str(Path.home())
-	aux = (home+"\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup")
-	print(aux)
-	#webbrowser.open_new_tab("google.com")
+	#home = str(Path.home())
+	#aux = (home+"\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup")
+	#print(aux)
+	webbrowser.open_new_tab("google.com")
 
 def mail_contacto():
 	webbrowser.open_new_tab("mailto:marcoromero_1@hotmail.com")
@@ -447,7 +439,7 @@ def donacion_web():
 
 def mjes_error(tipo):
 	# Crea un fichero con la hora y los errores
-	# producidos
+	# producidos por la interface
 	hoy = datetime.now()
 	aux0 = ("%s" %hoy)
 	aux = open('error.txt', 'a')
@@ -551,8 +543,8 @@ try:
 	else:
 		pass
 except OSError as err:
-	mjes_error("No se pudo crear la carpeta.")
-	registro("Imposible CREAR carpeta DATA.")
+	mjes_error("No se pudo crear la carpeta DATA.")
+	registro("IMPOSIBLE CREAR carpeta DATA.")
 
 datos = carga_datos()
 # Estado del check
@@ -760,21 +752,27 @@ donateBt.place(x=180, y=247)
 #-----------------------------------------------------------------
 
 # Maneja el cerrar con la X del admin. de ventanas
+# en las VENTANAS HIJAS
 v_conf.protocol("WM_DELETE_WINDOW", lambda:ocultar(v_conf))
 v_acerca.protocol("WM_DELETE_WINDOW", lambda:ocultar(v_acerca))
 # Oculta las ventanas TopLevel
 v_conf.withdraw()
 v_acerca.withdraw()
 
-# Inicializa el hilo del temporizador
+# Configuración del hilo del temporizador
 temp_comp = Temporizador(combo_intv, carga_ip, obtener_ip,
 	guarda_ip, email, registro)
+# Lo setea como "demonio", de manera que muere
+# al cerrar el .mainloop
 temp_comp.setDaemon(True)
+# Inicia el hilo del Temporizador
 temp_comp.start()
 
-
+# Comprueba el estado del CheckButton de
+# inicio con el Sistema:
 if chk_ini.state():
 	iniciar()
 
 # Loop PPAL
 v_ppal.mainloop()
+
