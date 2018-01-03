@@ -405,7 +405,6 @@ def crear_acceso():
 		dir_objetivo = os.getcwd()
 		# Indica la dirección del ícono
 		icono = os.path.join(os.getcwd(), "recs\IP_ico.ico")
-		print(icono)
 		# Crea el acceso con los dato brindados
 		shell = Dispatch('WScript.Shell')
 		shortcut = shell.CreateShortCut(ruta)
@@ -464,6 +463,9 @@ def registro(info):
 	aux = open('registro.txt', 'a')
 	aux.write("%s %s\n" %(aux0, info))
 	aux.close()
+
+def salir():
+	sys.exit()
 
 #=================================================================
 #
@@ -530,7 +532,7 @@ bt_oc = ttk.Button(v_ppal, text="Ocultar",
 	command=lambda:ejecutar(a_bandeja(v_ppal)))
 bt_oc.place(height=30, width=77, x=135, y=360)
 # Botón de SALIR
-bt_salir = ttk.Button(v_ppal, text="Salir", command=exit)
+bt_salir = ttk.Button(v_ppal, text="Salir", command=salir)
 bt_salir.place(height=65, width=92, x=220, y=328)
 
 #=================================================================

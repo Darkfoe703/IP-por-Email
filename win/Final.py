@@ -18,6 +18,7 @@ from datetime import datetime, date, time, timedelta
 from threading import Thread
 from pathlib import Path
 from win32com.client import Dispatch
+from infi.systray import SysTrayIcon
 import urllib, sys, re, threading, time, base64, os
 import smtplib, errno, webbrowser, winshell
 # Para los botones con link
@@ -117,7 +118,6 @@ class Temporizador(Thread):
 def mostrar(ventana):
 	v_ppal.attributes("-disabled", 1)
 	ventana.deiconify()
-	#ventana.attributes("-topmost", 1)
 
 def ocultar(ventana):
 	v_ppal.attributes("-disabled", 0)
@@ -233,7 +233,7 @@ def combo_intv():
 	return aux
 
 def a_bandeja(ventana):
-	ventana.iconify()
+	ventana.withdraw()
 
 def acep_conf():
 	"""Definición que se ejecuta al pulsar ACEPTAR
@@ -360,7 +360,7 @@ def email(ip):
 		toaddrs  = cpo_para.get()
 		msg = """From: IP por E-mail <%s>
 To: Para <%s>
-Subject: IP %s
+Subject: %s
 
 %s %s
 
@@ -405,7 +405,6 @@ def crear_acceso():
 		dir_objetivo = os.getcwd()
 		# Indica la dirección del ícono
 		icono = os.path.join(os.getcwd(), "recs\IP_ico.ico")
-		print(icono)
 		# Crea el acceso con los dato brindados
 		shell = Dispatch('WScript.Shell')
 		shortcut = shell.CreateShortCut(ruta)
@@ -464,6 +463,9 @@ def registro(info):
 	aux = open('registro.txt', 'a')
 	aux.write("%s %s\n" %(aux0, info))
 	aux.close()
+
+def salir():
+	sys.exit()
 
 #=================================================================
 #
@@ -530,7 +532,7 @@ bt_oc = ttk.Button(v_ppal, text="Ocultar",
 	command=lambda:ejecutar(a_bandeja(v_ppal)))
 bt_oc.place(height=30, width=77, x=135, y=360)
 # Botón de SALIR
-bt_salir = ttk.Button(v_ppal, text="Salir", command=exit)
+bt_salir = ttk.Button(v_ppal, text="Salir", command=salir)
 bt_salir.place(height=65, width=92, x=220, y=328)
 
 #=================================================================
@@ -758,7 +760,7 @@ v_acerca.protocol("WM_DELETE_WINDOW", lambda:ocultar(v_acerca))
 # Oculta las ventanas TopLevel
 v_conf.withdraw()
 v_acerca.withdraw()
-
+#-----------------------------------------------------------------
 # Configuración del hilo del temporizador
 temp_comp = Temporizador(combo_intv, carga_ip, obtener_ip,
 	guarda_ip, email, registro)
@@ -767,6 +769,7 @@ temp_comp = Temporizador(combo_intv, carga_ip, obtener_ip,
 temp_comp.setDaemon(True)
 # Inicia el hilo del Temporizador
 temp_comp.start()
+#-----------------------------------------------------------------
 
 # Comprueba el estado del CheckButton de
 # inicio con el Sistema:
