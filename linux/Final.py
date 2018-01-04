@@ -17,9 +17,9 @@ from urllib.request import urlopen
 from datetime import datetime, date, time, timedelta
 from threading import Thread
 from pathlib import Path
-from win32com.client import Dispatch
-import urllib, sys, re, threading, time, base64, os
-import smtplib, errno, webbrowser, winshell
+from Crypto.Cipher import AES
+import urllib, sys, re, threading, time
+import smtplib, errno, webbrowser, os
 # Para los botones con link
 import tkinter as tk
 
@@ -115,12 +115,11 @@ class Temporizador(Thread):
 
 
 def mostrar(ventana):
-	v_ppal.attributes("-disabled", 1)
+	#v_ppal.attributes("-disabled", 1)
 	ventana.deiconify()
-	#ventana.attributes("-topmost", 1)
 
 def ocultar(ventana):
-	v_ppal.attributes("-disabled", 0)
+	#v_ppal.attributes("-disabled", 0)
 	ventana.withdraw()
 
 def ejecutar(f):
@@ -128,7 +127,7 @@ def ejecutar(f):
 
 def carga_datos():
 	# Llama a la funcion que decodifica Base64
-	aux1 = decodif('DATA/_SCNFTG.SNT')
+	aux1 = desencriptar('DATA/_SCNFTG.SNT')
 	if aux1 != '':
 		datos = (str(aux1, 'utf-8')).split('\n')
 		return datos
@@ -140,7 +139,7 @@ def carga_datos():
 
 def carga_mje():
 	# Llama a la funcion que decodifica Base64
-	aux1 = decodif('DATA/_SMNJTE.SNT')
+	aux1 = desencriptar('DATA/_SMNJTE.SNT')
 	if aux1 != '':
 		mje_gdado = (str(aux1, 'utf-8'))
 		# Quita el ultimo elemeto q es un salto
@@ -163,19 +162,40 @@ def carga_ip():
 		IP_gdada = ''
 	return IP_gdada
 
-def decodif(archivo):
+def encriptar(archivo):
+	key = '1111222233334444'
+	key = bytes(key, 'utf-8')
 	try:
-		# Abre y lee el archivo escrito en Base64
 		aux1 = open(archivo, 'r')
 		aux2 = aux1.read()
-		# lo cierra
 		aux1.close()
-		# Convierte lo leido a cristiano
-		aux = base64.b64decode(bytes(aux2, 'utf-8'))
-		return aux
+		data = bytes(aux2, 'utf-8')
+		#Encripta
+		cipher = AES.new(key, AES.MODE_EAX)
+		ciphertext, tag = cipher.encrypt_and_digest(data)
+		file_out = open(archivo, "wb")
+		[ file_out.write(x) for x in (cipher.nonce, tag, ciphertext) ]
 	except OSError as err:
-		aux = ''
-		return aux
+		return "Error"
+
+def desencriptar(archivo):
+	key = '1111222233334444'
+	key = bytes(key, 'utf-8')
+	try:
+		file_in = open(archivo, "rb")
+		nonce, tag, ciphertext = [ file_in.read(x) for x in (16, 16, -1) ]
+		# let's assume that the key is somehow available again
+		cipher = AES.new(key, AES.MODE_EAX, nonce)
+		data = cipher.decrypt_and_verify(ciphertext, tag)
+		return data
+	except OSError as err:
+		data = ''
+		return data
+	except ValueError as err:
+		# Este error se produce si el archivo encriptado
+		# es modificado o corrompido.
+		data = ''
+		return data
 
 def iniciar():
 	# Se asegura que la configuración no esté vacía
@@ -233,7 +253,7 @@ def combo_intv():
 	return aux
 
 def a_bandeja(ventana):
-	ventana.iconify()
+	ventana.withdraw()
 
 def acep_conf():
 	"""Definición que se ejecuta al pulsar ACEPTAR
@@ -297,8 +317,8 @@ def guard_config_mje(configuracion, mensaje):
 	except OSError as err:
 		registro("Guardar Configuración: FALLÓ.")
 	# Llama a la función para codificar los archivos
-	codif('DATA/_SCNFTG.SNT')
-	codif('DATA/_SMNJTE.snt')
+	encriptar('DATA/_SCNFTG.SNT')
+	encriptar('DATA/_SMNJTE.SNT')
 
 def guarda_ip(ip):
 	try:
@@ -309,20 +329,6 @@ def guarda_ip(ip):
 	except OSError as err:
 		registro("Guardar dirección IP: FALLÓ.")
 
-def codif(archivo):
-	# Abre el archivo escrito en cristiano
-	# lo lee y lo cierra.
-	try:
-		aux1 = open(archivo, 'r')
-		aux2 = aux1.read()
-		aux1.close()
-		# Convierte lo leido a Base64
-		b64 = base64.b64encode(bytes(aux2, "utf-8"))
-		aux1 = open(archivo, 'w')
-		aux1.write(str(b64, 'utf-8'))
-		aux1.close()
-	except OSError as err:
-		return "Error"
 
 def obtener_ip():
 	# Intenta conectar a la web
@@ -360,7 +366,7 @@ def email(ip):
 		toaddrs  = cpo_para.get()
 		msg = """From: IP por E-mail <%s>
 To: Para <%s>
-Subject: IP %s
+Subject: %s
 
 %s %s
 
@@ -396,39 +402,16 @@ def bar_estado_intv(hora):
 		barraEstado.config(text=("  **Próxima comprobación: "+aux+"**"))
 
 def crear_acceso():
-	try:
-		# Reconoce la carpeta de Inicio
-		startup = winshell.startup()
-		ruta = os.path.join(startup, "IP por Email - vCC.lnk")
-		# Cual es el archivo al q se le hará un link
-		objetivo = os.path.abspath('Final.py')
-		dir_objetivo = os.getcwd()
-		# Indica la dirección del ícono
-		icono = os.path.join(os.getcwd(), "recs\IP_ico.ico")
-		# Crea el acceso con los dato brindados
-		shell = Dispatch('WScript.Shell')
-		shortcut = shell.CreateShortCut(ruta)
-		shortcut.Targetpath = objetivo
-		shortcut.WorkingDirectory = dir_objetivo
-		shortcut.IconLocation = icono
-		shortcut.save()
-	except:
-		mjes_error("No se pudo crear el acceso directo.")
+	pass
 
 def borrar_acceso():
-	startup = winshell.startup()
-	accesoD = os.path.join(startup, "IP por Email - vCC.lnk")
-	aux = os.path.isfile(accesoD)
-	# Si el acceso directo existe lo borra
-	if aux == True:
-		winshell.delete_file(accesoD, allow_undo=False,
-			no_confirm=True ,silent=True)
+	pass
 
 def sitio_web():
 	#home = str(Path.home())
 	#aux = (home+"\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup")
 	#print(aux)
-	webbrowser.open_new_tab("google.com")
+	webbrowser.open_new_tab("https://www.google.com")
 
 def mail_contacto():
 	webbrowser.open_new_tab("mailto:marcoromero_1@hotmail.com")
@@ -483,7 +466,7 @@ alto_ppal = 415
 v_ppal.geometry('%dx%d+%d+%d' % (ancho_ppal, alto_ppal,
 	(x-(ancho_ppal/2)), (y-(alto_ppal/2))))
 v_ppal.resizable(0, 0)
-v_ppal.iconbitmap('recs/IP_ico.ico')
+v_ppal.iconbitmap('@recs/IP_ico.xbm')
 
 # -----------------------ELEMENTOS PPAL---------------------------
 # Carga imagen de Ppal de archivo
@@ -581,7 +564,7 @@ alto_conf = 360
 v_conf.geometry('%dx%d+%d+%d' % (ancho_conf, alto_conf,
 	(x-(ancho_conf/2)), ((y-(alto_conf/2)))+20))
 v_conf.resizable(0, 0)
-v_conf.iconbitmap('recs/Config_ico.ico')
+v_conf.iconbitmap('@recs/Config_ico.xbm')
 
 # ---------------------ELEMENTOS CONFIG---------------------------
 # ------------ Cuadro SMTP ---------------------------------------
@@ -690,8 +673,8 @@ alto_acer = 300
 v_acerca.geometry('%dx%d+%d+%d' % (ancho_acer, alto_acer,
 	(x-(ancho_acer/2)), (y-(alto_acer/2))))
 v_acerca.resizable(0, 0)
-v_acerca.attributes("-toolwindow", 1)
-v_acerca.iconbitmap('recs/IP_ico.ico')
+#v_acerca.attributes("-toolwindow", 1)
+v_acerca.iconbitmap('@recs/IP_ico.xbm')
 
 # ---------------------ELEMENTOS ACERCA --------------------------
 
@@ -760,7 +743,7 @@ v_acerca.protocol("WM_DELETE_WINDOW", lambda:ocultar(v_acerca))
 # Oculta las ventanas TopLevel
 v_conf.withdraw()
 v_acerca.withdraw()
-
+#-----------------------------------------------------------------
 # Configuración del hilo del temporizador
 temp_comp = Temporizador(combo_intv, carga_ip, obtener_ip,
 	guarda_ip, email, registro)
@@ -769,6 +752,7 @@ temp_comp = Temporizador(combo_intv, carga_ip, obtener_ip,
 temp_comp.setDaemon(True)
 # Inicia el hilo del Temporizador
 temp_comp.start()
+#-----------------------------------------------------------------
 
 # Comprueba el estado del CheckButton de
 # inicio con el Sistema:

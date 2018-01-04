@@ -20,7 +20,7 @@ from pathlib import Path
 from Cryptodome.Cipher import AES
 from win32com.client import Dispatch
 from infi.systray import SysTrayIcon
-import urllib, sys, re, threading, time, base64, os
+import urllib, sys, re, threading, time, os
 import smtplib, errno, webbrowser, winshell
 # Para los botones con link
 import tkinter as tk
