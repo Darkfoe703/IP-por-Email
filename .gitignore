@@ -4,6 +4,7 @@
 *.pyd
 *.SNT
 win/registro.txt
+
 linux/registro.txt
 
 # Carpetas a ignorar
