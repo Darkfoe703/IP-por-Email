@@ -17,6 +17,7 @@ from urllib.request import urlopen
 from datetime import datetime, date, time, timedelta
 from threading import Thread
 from pathlib import Path
+from Cryptodome.Cipher import AES
 from win32com.client import Dispatch
 from infi.systray import SysTrayIcon
 import urllib, sys, re, threading, time, base64, os
@@ -128,7 +129,7 @@ def ejecutar(f):
 
 def carga_datos():
 	# Llama a la funcion que decodifica Base64
-	aux1 = decodif('DATA/_SCNFTG.SNT')
+	aux1 = desencriptar('DATA/_SCNFTG.SNT')
 	if aux1 != '':
 		datos = (str(aux1, 'utf-8')).split('\n')
 		return datos
@@ -140,7 +141,7 @@ def carga_datos():
 
 def carga_mje():
 	# Llama a la funcion que decodifica Base64
-	aux1 = decodif('DATA/_SMNJTE.SNT')
+	aux1 = desencriptar('DATA/_SMNJTE.SNT')
 	if aux1 != '':
 		mje_gdado = (str(aux1, 'utf-8'))
 		# Quita el ultimo elemeto q es un salto
@@ -163,19 +164,40 @@ def carga_ip():
 		IP_gdada = ''
 	return IP_gdada
 
-def decodif(archivo):
+def encriptar(archivo):
+	key = '1111222233334444'
+	key = bytes(key, 'utf-8')
 	try:
-		# Abre y lee el archivo escrito en Base64
 		aux1 = open(archivo, 'r')
 		aux2 = aux1.read()
-		# lo cierra
 		aux1.close()
-		# Convierte lo leido a cristiano
-		aux = base64.b64decode(bytes(aux2, 'utf-8'))
-		return aux
+		data = bytes(aux2, 'utf-8')
+		#Encripta
+		cipher = AES.new(key, AES.MODE_EAX)
+		ciphertext, tag = cipher.encrypt_and_digest(data)
+		file_out = open(archivo, "wb")
+		[ file_out.write(x) for x in (cipher.nonce, tag, ciphertext) ]
 	except OSError as err:
-		aux = ''
-		return aux
+		return "Error"
+
+def desencriptar(archivo):
+	key = '1111222233334444'
+	key = bytes(key, 'utf-8')
+	try:
+		file_in = open(archivo, "rb")
+		nonce, tag, ciphertext = [ file_in.read(x) for x in (16, 16, -1) ]
+		# let's assume that the key is somehow available again
+		cipher = AES.new(key, AES.MODE_EAX, nonce)
+		data = cipher.decrypt_and_verify(ciphertext, tag)
+		return data
+	except OSError as err:
+		data = ''
+		return data
+	except ValueError as err:
+		# Este error se produce si el archivo encriptado
+		# es modificado o corrompido.
+		data = ''
+		return data
 
 def iniciar():
 	# Se asegura que la configuración no esté vacía
@@ -297,8 +319,8 @@ def guard_config_mje(configuracion, mensaje):
 	except OSError as err:
 		registro("Guardar Configuración: FALLÓ.")
 	# Llama a la función para codificar los archivos
-	codif('DATA/_SCNFTG.SNT')
-	codif('DATA/_SMNJTE.snt')
+	encriptar('DATA/_SCNFTG.SNT')
+	encriptar('DATA/_SMNJTE.SNT')
 
 def guarda_ip(ip):
 	try:
@@ -309,20 +331,6 @@ def guarda_ip(ip):
 	except OSError as err:
 		registro("Guardar dirección IP: FALLÓ.")
 
-def codif(archivo):
-	# Abre el archivo escrito en cristiano
-	# lo lee y lo cierra.
-	try:
-		aux1 = open(archivo, 'r')
-		aux2 = aux1.read()
-		aux1.close()
-		# Convierte lo leido a Base64
-		b64 = base64.b64encode(bytes(aux2, "utf-8"))
-		aux1 = open(archivo, 'w')
-		aux1.write(str(b64, 'utf-8'))
-		aux1.close()
-	except OSError as err:
-		return "Error"
 
 def obtener_ip():
 	# Intenta conectar a la web
