@@ -3,6 +3,9 @@
 *.pyc
 *.pyd
 *.SNT
+win/registro.txt
+
+linux/registro.txt
 
 # Carpetas a ignorar
 
@@ -11,3 +14,4 @@
 /win/dist
 /win/Inst
 /win/__pycache__
+

@@ -17,8 +17,10 @@ from urllib.request import urlopen
 from datetime import datetime, date, time, timedelta
 from threading import Thread
 from pathlib import Path
+from Cryptodome.Cipher import AES
 from win32com.client import Dispatch
-import urllib, sys, re, threading, time, base64, os
+from infi.systray import SysTrayIcon
+import urllib, sys, re, threading, time, os
 import smtplib, errno, webbrowser, winshell
 # Para los botones con link
 import tkinter as tk
@@ -30,63 +32,77 @@ v_acerca = Toplevel(v_ppal, bg="black")
 sys.setrecursionlimit(2880)
 
 class Temporizador(Thread):
-	"""Temporiza el intervalo en el que se vuelve
-	a hacer las comprobaciones de IP"""
-	def __init__(self, funcion0, funcion1, funcion2, funcion3, funcion4):
+	'''Temporiza el intervalo en el que se vuelve
+	a hacer las comprobaciones de IP'''
+	def __init__(self, funcion0, funcion1, funcion2,
+		funcion3, funcion4, funcion5):
+					# (combo_intv, carga_ip, obtener_ip,
+					#guarda_ip, email, registro)
 		super(Temporizador, self).__init__()
 		self._estado = False
-		self.it = funcion0
-		self.cargaIP = funcion1
-		self.obtenIP = funcion2
-		self.fun_email = funcion3
-		self.fun_gIP = funcion4
+		self.it = funcion0 # combo_intv()
+		self.cargaIP = funcion1 # carga_ip()
+		self.obtenIP = funcion2 # obtener_ip()
+		self.fun_gIP = funcion3 # guarda_ip()
+		self.fun_email = funcion4 # email()
+		self.reg = funcion5 # registro()
 
 	def run(self):
+		# Toma la hora del sistema
 		hora = datetime.now()
+		# Es igual a 6, 12 o 24
 		auxIT = self.it()
-		it = timedelta(hours=auxIT)
+		# Hace la suma de la hora actual+intervalo
+		it = timedelta(minutes=auxIT)
+		# HORA de la próx. comprobación
 		hra_objetivo = (hora + it)
-
 		while self._estado != False:
 			# La barra deestado recibe la hora objetivo de comprobación
-			estado_int(hra_objetivo)
+			bar_estado_intv(hra_objetivo)
 			# Se fija si existe un archivo con la IP
 			exte = os.path.isfile('DATA/_IP.SNT')
+				# Si no hay:
 			if exte == False:
+				# Se obtine la IP
 				ipN = self.obtenIP()
+				# se la guarda
 				self.fun_gIP(ipN)
+				# se la envía
 				self.fun_email(ipN)
 			#else:
 				# aquí se podría implementar que,
 				# si el archivo contiene una IP
 				# se compruebe de primeras si es la actual...
 
+			# La HORA ACTUAL es mayor o igual la HORA OBJETIVO
 			if hra_objetivo <= datetime.now():
-
+				self.reg("Hora de la COMPROBACIÓN.")
 				# Carga la IP guardada, si existe
 				aux = self.cargaIP()
-				# Le quira el salto de línea
+				# Le quita el salto de línea
 				ip0 = aux.rstrip("\n")
 				# Obtine la IP de la web
 				ipN = self.obtenIP()
 				# Ajusta el intervalo
 				hora = datetime.now()
-				it = timedelta(hours=self.it)
+				auxIT = self.it()
+				it = timedelta(minutes = auxIT)
 				hra_objetivo = (hora + it)
-				estado_int(hra_objetivo)
+				bar_estado_intv(hra_objetivo)
 				# Compara las IPs
 				if ipN != ip0:
 					# Si son distintas, guarda y envía la nueva
 					self.fun_gIP(ipN)
 					self.fun_email(ipN)
+					self.reg("Direcciones DIFERENTES. ACTUALIZAR.")
 				else:
-					pass
+					self.reg("Direcciones IGUALES.")
 			time.sleep(1)
 			
 		else:
 			try:
 				#print("Detenido")
-				estado_int("DETENIDO")
+				bar_estado_intv("DETENIDO")
 				time.sleep(5)
 				self.run()
 			except RecursionError as err:
@@ -103,7 +119,6 @@ class Temporizador(Thread):
 def mostrar(ventana):
 	v_ppal.attributes("-disabled", 1)
 	ventana.deiconify()
-	#ventana.attributes("-topmost", 1)
 
 def ocultar(ventana):
 	v_ppal.attributes("-disabled", 0)
@@ -114,7 +129,7 @@ def ejecutar(f):
 
 def carga_datos():
 	# Llama a la funcion que decodifica Base64
-	aux1 = decodif('DATA/_SCNFTG.SNT')
+	aux1 = desencriptar('DATA/_SCNFTG.SNT')
 	if aux1 != '':
 		datos = (str(aux1, 'utf-8')).split('\n')
 		return datos
@@ -126,7 +141,7 @@ def carga_datos():
 
 def carga_mje():
 	# Llama a la funcion que decodifica Base64
-	aux1 = decodif('DATA/_SMNJTE.SNT')
+	aux1 = desencriptar('DATA/_SMNJTE.SNT')
 	if aux1 != '':
 		mje_gdado = (str(aux1, 'utf-8'))
 		# Quita el ultimo elemeto q es un salto
@@ -147,22 +162,42 @@ def carga_ip():
 	# Si no existe escribe un "" en su lugar
 	except OSError as err:
 		IP_gdada = ''
-
 	return IP_gdada
 
-def decodif(archivo):
+def encriptar(archivo):
+	key = '1111222233334444'
+	key = bytes(key, 'utf-8')
 	try:
-		# Abre y lee el archivo escrito en Base64
 		aux1 = open(archivo, 'r')
 		aux2 = aux1.read()
-		# lo cierra
 		aux1.close()
-		# Convierte lo leido a cristiano
-		aux = base64.b64decode(bytes(aux2, 'utf-8'))
-		return aux
+		data = bytes(aux2, 'utf-8')
+		#Encripta
+		cipher = AES.new(key, AES.MODE_EAX)
+		ciphertext, tag = cipher.encrypt_and_digest(data)
+		file_out = open(archivo, "wb")
+		[ file_out.write(x) for x in (cipher.nonce, tag, ciphertext) ]
 	except OSError as err:
-		aux = ''
-		return aux
+		return "Error"
+
+def desencriptar(archivo):
+	key = '1111222233334444'
+	key = bytes(key, 'utf-8')
+	try:
+		file_in = open(archivo, "rb")
+		nonce, tag, ciphertext = [ file_in.read(x) for x in (16, 16, -1) ]
+		# let's assume that the key is somehow available again
+		cipher = AES.new(key, AES.MODE_EAX, nonce)
+		data = cipher.decrypt_and_verify(ciphertext, tag)
+		return data
+	except OSError as err:
+		data = ''
+		return data
+	except ValueError as err:
+		# Este error se produce si el archivo encriptado
+		# es modificado o corrompido.
+		data = ''
+		return data
 
 def iniciar():
 	# Se asegura que la configuración no esté vacía
@@ -174,8 +209,10 @@ def iniciar():
 		bt_conf.config(state=DISABLED)
 		# Inicia el temporizador
 		temp_comp._start()
+		registro("Servicio INICIADO: ÉXITO.")
 	else:
 		mjes_error("Revise la configuración por favor.")
+		registro("Servicio INICIADO: FALLÓ.")
 		return "error"
 
 def detener():
@@ -183,6 +220,7 @@ def detener():
 	bt_ini.config(state=NORMAL)
 	bt_conf.config(state=NORMAL)
 	bt_det.config(state=DISABLED)
+	registro("Servicio DETENIDO.")
 
 def seguro_inicio():
 	servidor = cpo_sv.get()
@@ -191,7 +229,6 @@ def seguro_inicio():
 	contra = cpo_ctña.get()
 	contraR = cpo_Rctña.get()
 	dest = cpo_para.get()
-
 	if servidor == "":
 		return "error"
 	elif puerto == "":
@@ -218,7 +255,7 @@ def combo_intv():
 	return aux
 
 def a_bandeja(ventana):
-	ventana.iconify()
+	ventana.withdraw()
 
 def acep_conf():
 	"""Definición que se ejecuta al pulsar ACEPTAR
@@ -268,44 +305,32 @@ def restablecer():
 def guard_config_mje(configuracion, mensaje):
 	config = configuracion
 	mje = mensaje
-	# Guarda la configuracíon en un archivo
-	gua_config = open('DATA/_SCNFTG.SNT', 'w')
-	gua_config.writelines([config[0], "\n", config[1], "\n", config[2],
-			"\n", config[3], "\n", config[4], "\n", config[5], "\n", 
-			config[6], "\n", "FIN", "\n"])
-	gua_config.close()
-	# Y el mensaje personalizado en un archivo separado
-	
-	gua_mje = open('DATA/_SMNJTE.SNT', 'w')
-	gua_mje.writelines([mje])
-	gua_mje.close()
-
-
+	try:
+		# Guarda la configuracíon en un archivo
+		gua_config = open('DATA/_SCNFTG.SNT', 'w')
+		gua_config.writelines([config[0], "\n", config[1], "\n", config[2],
+				"\n", config[3], "\n", config[4], "\n", config[5], "\n", 
+				config[6], "\n", "FIN", "\n"])
+		gua_config.close()
+		# Y el mensaje personalizado en un archivo separado
+		gua_mje = open('DATA/_SMNJTE.SNT', 'w')
+		gua_mje.writelines([mje])
+		gua_mje.close()
+	except OSError as err:
+		registro("Guardar Configuración: FALLÓ.")
 	# Llama a la función para codificar los archivos
-	codif('DATA/_SCNFTG.SNT')
-	codif('DATA/_SMNJTE.snt')
+	encriptar('DATA/_SCNFTG.SNT')
+	encriptar('DATA/_SMNJTE.SNT')
 
 def guarda_ip(ip):
-	# Guarda la IP en un archivo
-	data = open('DATA/_IP.SNT', 'w')
-	data.writelines([ip, "\n"])
-	data.close()
-
-def codif(archivo):
-	# Abre el archivo escrito en cristiano
-	# lo lee y lo cierra.
 	try:
-		aux1 = open(archivo, 'r')
-		aux2 = aux1.read()
-		aux1.close()
-		# Convierte lo leido a Base64
-		b64 = base64.b64encode(bytes(aux2, "utf-8"))
-
-		aux1 = open(archivo, 'w')
-		aux1.write(str(b64, 'utf-8'))
-		aux1.close()
+		# Guarda la IP en un archivo
+		data = open('DATA/_IP.SNT', 'w')
+		data.writelines([ip, "\n"])
+		data.close()
 	except OSError as err:
-		return "Error"
+		registro("Guardar dirección IP: FALLÓ.")
+
 
 def obtener_ip():
 	# Intenta conectar a la web
@@ -321,11 +346,12 @@ def obtener_ip():
 		cortado3 = cortado2.split(" ")
 		# se guarda la IP en una variable
 		DireccionIP = cortado3[4]
-
+		registro("Obtener dirección: ÉXITO.")
 		return DireccionIP
 	# En caso de error de conexión
 	except urllib.error.URLError:
 		mjes_error("No se ha podido conectar. Revise su conexión a Internet")
+		registro("Obtener dirección: FALLÓ.")
 		return ("Error")
 
 def email(ip):
@@ -337,14 +363,12 @@ def email(ip):
 		servidor = cpo_sv.get()
 		puerto = cpo_puerto.get()
 		auxiliar = (servidor+":"+puerto)
-
 		mje = cpo_mje.get("1.0","end-1c")
-
 		fromaddr = cpo_usr.get()
 		toaddrs  = cpo_para.get()
 		msg = """From: IP por E-mail <%s>
 To: Para <%s>
-Subject: IP %s
+Subject: %s
 
 %s %s
 
@@ -354,21 +378,24 @@ Sol Negro Team - Desarrollo de Software (C) 2018.
 Por favor no conteste este mensaje.
                                                 @Darkfoe703 - SNT
 """ %(fromaddr, toaddrs, IP, mje, IP)
-		 
 		# Enviando el correo
 		server = smtplib.SMTP(auxiliar)
 		server.starttls()
 		server.login(username,password)
 		server.sendmail(fromaddr, toaddrs, msg)
 		server.quit()
+		registro("Enviar email: EXITO.")
 	except smtplib.SMTPAuthenticationError as err:
+		registro("Enviar email: FALLÓ.")
 		mjes_error("El Usuario y/o Contraseña no son válidos.\nRevise la configuración.")
 	except UnicodeEncodeError as err:
+		registro("Enviar email: FALLÓ.")
 		mjes_error("Ha incluido un caracter no permitido en el mensaje")
 	except:
+		registro("Enviar email: FALLÓ.")
 		mjes_error("No se ha podido establecer conexión con el servidor.\nRevise su conexión a Internet.")
 
-def estado_int(hora):
+def bar_estado_intv(hora):
 	if hora != 'DETENIDO':
 		aux = ("%s:%s" %(hora.hour, hora.minute))
 		barraEstado.config(text=("  **Próxima comprobación: "+aux+"**"))
@@ -386,7 +413,6 @@ def crear_acceso():
 		dir_objetivo = os.getcwd()
 		# Indica la dirección del ícono
 		icono = os.path.join(os.getcwd(), "recs\IP_ico.ico")
-		print(icono)
 		# Crea el acceso con los dato brindados
 		shell = Dispatch('WScript.Shell')
 		shortcut = shell.CreateShortCut(ruta)
@@ -405,13 +431,12 @@ def borrar_acceso():
 	if aux == True:
 		winshell.delete_file(accesoD, allow_undo=False,
 			no_confirm=True ,silent=True)
-	pass
 
 def sitio_web():
-	home = str(Path.home())
-	aux = (home+"\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup")
-	print(aux)
-	#webbrowser.open_new_tab("google.com")
+	#home = str(Path.home())
+	#aux = (home+"\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup")
+	#print(aux)
+	webbrowser.open_new_tab("google.com")
 
 def mail_contacto():
 	webbrowser.open_new_tab("mailto:marcoromero_1@hotmail.com")
@@ -421,7 +446,7 @@ def donacion_web():
 
 def mjes_error(tipo):
 	# Crea un fichero con la hora y los errores
-	# producidos
+	# producidos por la interface
 	hoy = datetime.now()
 	aux0 = ("%s" %hoy)
 	aux = open('error.txt', 'a')
@@ -430,6 +455,7 @@ def mjes_error(tipo):
 	messagebox.showwarning("¡Atención!",tipo)
 
 def error_muerto():
+	registro("Servicio TERMINADO.")
 	aux2 = "La aplicaión se detuvo por estar fuera de uso demasiado tiempo."
 	hoy = datetime.now()
 	aux0 = ("%s" %hoy)
@@ -438,6 +464,16 @@ def error_muerto():
 	aux.close()
 	mjes_error(aux2)
 	v_ppal.destroy()
+
+def registro(info):
+	ahora = datetime.now()
+	aux0 = ("%s" %ahora)
+	aux = open('registro.txt', 'a')
+	aux.write("%s %s\n" %(aux0, info))
+	aux.close()
+
+def salir():
+	sys.exit()
 
 #=================================================================
 #
@@ -504,7 +540,7 @@ bt_oc = ttk.Button(v_ppal, text="Ocultar",
 	command=lambda:ejecutar(a_bandeja(v_ppal)))
 bt_oc.place(height=30, width=77, x=135, y=360)
 # Botón de SALIR
-bt_salir = ttk.Button(v_ppal, text="Salir", command=exit)
+bt_salir = ttk.Button(v_ppal, text="Salir", command=salir)
 bt_salir.place(height=65, width=92, x=220, y=328)
 
 #=================================================================
@@ -516,8 +552,9 @@ try:
 		os.makedirs('DATA')
 	else:
 		pass
-except OSError as e:
-	pass
+except OSError as err:
+	mjes_error("No se pudo crear la carpeta DATA.")
+	registro("IMPOSIBLE CREAR carpeta DATA.")
 
 datos = carga_datos()
 # Estado del check
@@ -725,20 +762,28 @@ donateBt.place(x=180, y=247)
 #-----------------------------------------------------------------
 
 # Maneja el cerrar con la X del admin. de ventanas
+# en las VENTANAS HIJAS
 v_conf.protocol("WM_DELETE_WINDOW", lambda:ocultar(v_conf))
 v_acerca.protocol("WM_DELETE_WINDOW", lambda:ocultar(v_acerca))
 # Oculta las ventanas TopLevel
 v_conf.withdraw()
 v_acerca.withdraw()
-
-# Inicializa el hilo del temporizador
-temp_comp = Temporizador(combo_intv, carga_ip, obtener_ip, guarda_ip, email)
+#-----------------------------------------------------------------
+# Configuración del hilo del temporizador
+temp_comp = Temporizador(combo_intv, carga_ip, obtener_ip,
+	guarda_ip, email, registro)
+# Lo setea como "demonio", de manera que muere
+# al cerrar el .mainloop
 temp_comp.setDaemon(True)
+# Inicia el hilo del Temporizador
 temp_comp.start()
+#-----------------------------------------------------------------
 
-
+# Comprueba el estado del CheckButton de
+# inicio con el Sistema:
 if chk_ini.state():
 	iniciar()
 
 # Loop PPAL
 v_ppal.mainloop()
+
