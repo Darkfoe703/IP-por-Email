@@ -7,7 +7,7 @@
 # Copyright © 2018
 # 
 ##################################################################
-
+#/usr/bin/python3
 # -*- coding: utf-8 -*-
 
 # Importa los módulos necesarios
